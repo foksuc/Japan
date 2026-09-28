@@ -1245,12 +1245,7 @@ html[data-theme="light"]{--bg:#f8f5f1;--card:#fff;--text:#2c2c2c;--muted:#6b5b53
     items.push({label:title,meta:el.textContent.replace(/\s+/g,' ').trim(),id:el.id,city,text:day.textContent.toLowerCase()});
   });
   function esc(s){return String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
-  function updateConverter(){
-    const amount=Number(document.getElementById('rateAmount').value||0), cur=document.getElementById('rateCurrency').value;
-    let jpy=cur==='JPY'?amount:(cur==='RUB'?amount/cashRates.JPY_RUB_SELL:(amount*cashRates.USD_RUB_SELL)/cashRates.JPY_RUB_SELL);
-    const rub=jpy*cashRates.JPY_RUB_SELL, usd=rub/cashRates.USD_RUB_SELL;
-    document.getElementById('rateResult').innerHTML=money(jpy)+' JPY <span class="budget-total-sub">≈ ₽'+Math.round(rub).toLocaleString('ru-RU')+' / 
-    const q=input.value.trim().toLowerCase();
+  const q=input.value.trim().toLowerCase();
     if(!q){out.innerHTML='<div class="search-empty">Введите день, город, локацию, ресторан или транспорт.</div>';return;}
     const hits=items.filter(x=>x.text.includes(q)||x.meta.toLowerCase().includes(q)||x.label.toLowerCase().includes(q)).slice(0,20);
     if(!hits.length){out.innerHTML='<div class="search-empty">Ничего не найдено.</div>';return;}
@@ -1666,7 +1661,13 @@ const base=[
 ["Транспорт","Shin-Osaka → Tokyo, Hikari reserved","14400","30.11","Текущий стандартный тариф; конкретный поезд/тариф на дату требует проверки."]
 ];
 const key='japan-budget-manual-v1';
-  const cashRates={JPY_RUB_SELL:0.56,USD_RUB_SELL:80.92,source:'Valuta24 · Москва',date:'28.09.2026',online:false};
+  const cashRates={JPY_RUB_SELL:0.56,USD_RUB_SELL:80.92,source:'Valuta24 · Москва',date:'28.09.2026',online:false};function updateConverter(){
+    const amount=Number(document.getElementById('rateAmount').value||0), cur=document.getElementById('rateCurrency').value;
+    let jpy=cur==='JPY'?amount:(cur==='RUB'?amount/cashRates.JPY_RUB_SELL:(amount*cashRates.USD_RUB_SELL)/cashRates.JPY_RUB_SELL);
+    const rub=jpy*cashRates.JPY_RUB_SELL, usd=rub/cashRates.USD_RUB_SELL;
+    document.getElementById('rateResult').innerHTML=money(jpy)+' JPY <span class="budget-total-sub">≈ ₽'+Math.round(rub).toLocaleString('ru-RU')+' / $'+usd.toFixed(2)+'</span>';
+  }
+  
   let manual=[];
   try{manual=JSON.parse(localStorage.getItem(key)||'[]')||[];manual=manual.map(x=>({name:x.name,amount:Number(x.amount||x.jpyAmount||0),currency:x.currency||'JPY',jpyAmount:Number(x.jpyAmount||x.amount||0),category:x.category||'Другое',comment:x.comment||''}));}catch(e){manual=[];}
   const money=n=>'¥'+Number(n||0).toLocaleString('ja-JP');
