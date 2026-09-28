@@ -446,7 +446,7 @@ html[data-theme="light"]{--bg:#f8f5f1;--card:#fff;--text:#2c2c2c;--muted:#6b5b53
       </div>
     </div>
     <div class="budget-summary">
-      <div class="budget-total"><div class="budget-label">Итого учтено</div><div class="budget-value" id="budgetTotal">¥0<span class="budget-total-secondary" id="budgetTotalRub">≈ ₽—</span><span class="budget-total-secondary" id="budgetTotalUsd">≈ $—</span></div></div>
+      <div class="budget-total"><div class="budget-label">Итого учтено</div><div class="budget-value" id="budgetTotal">¥0<span class="budget-total-secondary" id="budgetTotalFx">(≈ ₽— · $—)</span></div></div>
       <div class="budget-stat"><div class="budget-label">Расходов</div><div class="budget-value" id="budgetCount">0</div></div>
       <div class="budget-stat"><div class="budget-label">Добавлено вами</div><div class="budget-value" id="budgetManualTotal">¥0</div></div>
     </div>
@@ -1658,8 +1658,7 @@ window.addEventListener('offline', loadWeather);
     manualList.innerHTML=manual.length?manual.map((x,i)=>'<div class="budget-row manual"><div class="budget-row-main"><div class="budget-row-name">'+esc(x.name)+'</div><div class="budget-row-meta">'+esc(x.category)+(x.comment?' · '+esc(x.comment):'')+'</div></div><div class="budget-row-amount">'+money(x.amount)+' <button class="budget-edit" type="button" data-edit-manual="'+i+'">Изменить</button><button class="budget-delete" type="button" data-delete="'+i+'" aria-label="Удалить трату">×</button></div></div>').join(''):'<div class="budget-note">Дополнительных трат пока нет.</div>';
     const baseTotal=savedBase.reduce((s,n)=>s+n,0),manualTotal=manual.reduce((s,x)=>s+Number(x.amount||0),0),total=baseTotal+manualTotal;
     document.getElementById('budgetTotal').childNodes[0].nodeValue=money(total);
-    document.getElementById('budgetTotalRub').textContent='≈ '+rub(convert(total,'JPY','RUB'));
-    document.getElementById('budgetTotalUsd').textContent='≈ '+usd(convert(total,'JPY','USD'));
+    document.getElementById('budgetTotalFx').textContent='(≈ '+rub(convert(total,'JPY','RUB'))+' · '+usd(convert(total,'JPY','USD'))+')';
     document.getElementById('budgetCount').textContent=base.length+manual.length;
     document.getElementById('budgetManualTotal').textContent=money(manualTotal);
     baseList.querySelectorAll('[data-edit-base]').forEach(b=>b.addEventListener('click',()=>{const i=Number(b.dataset.editBase),v=prompt('Новая сумма в JPY для «'+base[i][1]+'»',String(savedBase[i]));if(v===null)return;const n=Number(v);if(!Number.isFinite(n)||n<0)return;editedBase[i]=n;saveBase();render();}));
