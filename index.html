@@ -310,8 +310,22 @@ html[data-theme="light"]{--bg:#f8f5f1;--card:#fff;--text:#2c2c2c;--muted:#6b5b53
 .budget-row-main{min-width:0}
 .budget-row-name{font-size:.82rem;font-weight:750}
 .budget-row-meta{font-size:.68rem;color:var(--muted);margin-top:2px}
-.budget-row-amount{font-size:.82rem;font-weight:800;color:var(--accent);white-space:nowrap;font-variant-numeric:tabular-nums}
+.budget-row-amount{font-size:.82rem;font-weight:800;color:var(--accent);white-space:nowrap;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:5px}
 .budget-row.optional{opacity:.82}
+.budget-edit{border:1px solid var(--border);background:var(--card);color:var(--accent);border-radius:8px;padding:4px 7px;font:inherit;font-size:.68rem;font-weight:800;cursor:pointer}
+.budget-edit:hover{background:var(--accent-light)}
+.budget-rates{margin:10px 0 14px;padding:11px 12px;border:1px solid var(--border);border-radius:13px;background:var(--card)}
+.budget-rates-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.budget-rates-title{font-size:.82rem;font-weight:850}
+.budget-refresh{border:0;border-radius:10px;background:var(--accent);color:#fff;padding:8px 11px;font:inherit;font-size:.72rem;font-weight:800;cursor:pointer}
+.budget-rates-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:9px}
+.budget-rate{padding:8px 9px;border-radius:10px;background:var(--accent-light);font-size:.72rem;line-height:1.4}
+.budget-rate b{font-variant-numeric:tabular-nums}
+.budget-rate-note{font-size:.67rem;color:var(--muted);margin-top:8px;line-height:1.4}
+.budget-converter{display:grid;grid-template-columns:1fr 110px 1fr;gap:7px;margin-top:10px}
+.budget-converter input,.budget-converter select{width:100%;min-height:38px;border:1px solid var(--border);border-radius:9px;background:var(--card);color:var(--text);padding:7px 9px;font:inherit;font-size:.78rem}
+.budget-converter-result{grid-column:1/-1;font-size:.8rem;font-weight:800;padding:8px 10px;background:var(--accent-light);border-radius:9px}
+.budget-total-secondary{display:block;font-size:.72rem;font-weight:650;opacity:.8;margin-top:3px}
 .budget-row.manual{background:var(--card)}
 .budget-delete{border:0;background:transparent;color:var(--muted);cursor:pointer;margin-left:6px}
 .budget-form{display:grid;grid-template-columns:1fr 120px;gap:8px;margin-top:10px}
@@ -414,8 +428,25 @@ html[data-theme="light"]{--bg:#f8f5f1;--card:#fff;--text:#2c2c2c;--muted:#6b5b53
       <h2 id="budgetTitle">Бюджет поездки</h2>
       <button class="budget-close" type="button" id="closeBudget" aria-label="Закрыть бюджет">×</button>
     </div>
+    <div class="budget-rates">
+      <div class="budget-rates-head">
+        <div class="budget-rates-title">Наличный курс</div>
+        <button class="budget-refresh" type="button" id="refreshBudgetRates">↻ Обновить курс</button>
+      </div>
+      <div class="budget-rates-grid" id="budgetRatesGrid">
+        <div class="budget-rate">JPY → RUB<br><b id="rateJpyRub">—</b></div>
+        <div class="budget-rate">USD → RUB<br><b id="rateUsdRub">—</b></div>
+      </div>
+      <div class="budget-rate-note" id="budgetRatesNote">Наличные курсы банков Москвы. Для итогового эквивалента используются курсы покупки валюты банком; для обратной конвертации — продажи. Источник: РБК «Рынок наличной валюты».</div>
+      <div class="budget-converter">
+        <input id="budgetConvertAmount" type="number" min="0" step="any" inputmode="decimal" placeholder="Сумма">
+        <select id="budgetConvertFrom"><option value="JPY">JPY ¥</option><option value="RUB">RUB ₽</option><option value="USD">USD $</option></select>
+        <select id="budgetConvertTo"><option value="RUB">RUB ₽</option><option value="JPY">JPY ¥</option><option value="USD">USD $</option></select>
+        <div class="budget-converter-result" id="budgetConverterResult">Введите сумму для конвертации</div>
+      </div>
+    </div>
     <div class="budget-summary">
-      <div class="budget-total"><div class="budget-label">Итого учтено</div><div class="budget-value" id="budgetTotal">¥0</div></div>
+      <div class="budget-total"><div class="budget-label">Итого учтено</div><div class="budget-value" id="budgetTotal">¥0<span class="budget-total-secondary" id="budgetTotalRub">≈ ₽—</span><span class="budget-total-secondary" id="budgetTotalUsd">≈ $—</span></div></div>
       <div class="budget-stat"><div class="budget-label">Расходов</div><div class="budget-value" id="budgetCount">0</div></div>
       <div class="budget-stat"><div class="budget-label">Добавлено вами</div><div class="budget-value" id="budgetManualTotal">¥0</div></div>
     </div>
@@ -1587,36 +1618,87 @@ window.addEventListener('offline', loadWeather);
   const modal=document.getElementById('budgetModal'),open=document.getElementById('openBudget'),close=document.getElementById('closeBudget');
   const form=document.getElementById('budgetForm'),baseList=document.getElementById('budgetBaseList'),manualList=document.getElementById('budgetManualList');
   if(!modal||!open||!close||!form) return;
-  const base=[["Транспорт","Narita → Asakusa, Keisei Access Express","1290","18.11","Подтверждённый взрослый тариф; IC-вариант ¥1,276 не включён."],["Билеты","Shinjuku Gyoen","500","19.11","Взрослый вход."],["Билеты","SHIBUYA SKY","3400","19.11","Текущая цена web-билета после 15:00; продажа на дату открывается позже."],["Транспорт","Канатная дорога Mount Takao, туда-обратно","980","20.11","Взрослый round trip."],["Билеты","Koishikawa Korakuen, дневной вход","300","21.11","Взрослый вход."],["Транспорт","Tokyo → Kyoto, Hikari reserved","13850","22.11","Текущий опубликованный ориентир; конкретный тариф на дату требует проверки."],["Билеты","Kinkaku-ji","500","23.11","Взрослый вход."],["Билеты","Ryoan-ji","600","23.11","Взрослый вход."],["Билеты","Tenryu-ji, сад","500","24.11","Вход в сад; здания отдельно не включены."],["Транспорт","Kyoto → Osaka, JR Special Rapid","580","25.11","Взрослый тариф в одну сторону."],["Билеты","Osaka Castle Museum","1200","25.11","Взрослый вход."],["Транспорт","Osaka-Namba → Nishikujo, Hanshin Namba Line","400","26.11","Взрослый тариф; участок Nishikujo → Universal City требует отдельной проверки."],["Транспорт","Osaka-Namba → Kintetsu-Nara","680","27.11","Обычный взрослый тариф; Limited Express не включён."],["Билеты","Tōdai-ji","800","27.11","Взрослый вход."],["Билеты","Kasuga Taisha, special worship","700","27.11","Опциональный special worship; не общий вход в территорию."],["Транспорт","Osaka ↔ Himeji, JR Special Rapid","2980","28.11","¥1,490 в одну сторону × 2."],["Билеты","Himeji Castle + Koko-en, combo","2600","28.11","Комбинированный билет; вместо отдельных ¥2,500 + ¥400."],["Билеты","Katsuo-ji","500","29.11","Взрослый вход."],["Транспорт","Minoh-Kayano ↔ Katsuo-ji, Hankyu Bus","1600","29.11","¥800 в одну сторону × 2; безналичная оплата."],["Билеты","Tsutenkaku","1500","29.11","Взрослый билет."],["Транспорт","Shin-Osaka → Tokyo, Hikari reserved","14400","30.11","Текущий опубликованный ориентир; конкретный тариф на дату требует проверки."]];
-  const key='japan-budget-manual-v1';
-  let manual=[];
+  const base=[
+    ["Транспорт","Narita → Asakusa, Keisei Access Express","1290","18.11","Подтверждённый взрослый тариф; IC-вариант ¥1,276 не включён."],["Билеты","Shinjuku Gyoen","500","19.11","Взрослый вход."],["Билеты","SHIBUYA SKY","3400","19.11","Текущая цена web-билета после 15:00; продажа на дату открывается позже."],["Транспорт","Канатная дорога Mount Takao, туда-обратно","980","20.11","Взрослый round trip."],["Билеты","Koishikawa Korakuen, дневной вход","300","21.11","Взрослый вход."],["Транспорт","Tokyo → Kyoto, Hikari reserved","13850","22.11","Текущий опубликованный ориентир; конкретный тариф на дату требует проверки."],["Билеты","Kinkaku-ji","500","23.11","Взрослый вход."],["Билеты","Ryoan-ji","600","23.11","Взрослый вход."],["Билеты","Tenryu-ji, сад","500","24.11","Вход в сад; здания отдельно не включены."],["Транспорт","Kyoto → Osaka, JR Special Rapid","580","25.11","Взрослый тариф в одну сторону."],["Билеты","Osaka Castle Museum","1200","25.11","Взрослый вход."],["Транспорт","Osaka-Namba → Nishikujo, Hanshin Namba Line","400","26.11","Взрослый тариф; участок Nishikujo → Universal City требует отдельной проверки."],["Транспорт","Osaka-Namba → Kintetsu-Nara","680","27.11","Обычный взрослый тариф; Limited Express не включён."],["Билеты","Tōdai-ji","800","27.11","Взрослый вход."],["Билеты","Kasuga Taisha, special worship","700","27.11","Опциональный special worship; не общий вход в территорию."],["Транспорт","Osaka ↔ Himeji, JR Special Rapid","2980","28.11","¥1,490 в одну сторону × 2."],["Билеты","Himeji Castle + Koko-en, combo","2600","28.11","Комбинированный билет; вместо отдельных ¥2,500 + ¥400."],["Билеты","Katsuo-ji","500","29.11","Взрослый вход."],["Транспорт","Minoh-Kayano ↔ Katsuo-ji, Hankyu Bus","1600","29.11","¥800 в одну сторону × 2; безналичная оплата."],["Билеты","Tsutenkaku","1500","29.11","Взрослый билет."],["Транспорт","Shin-Osaka → Tokyo, Hikari reserved","14400","30.11","Текущий опубликованный ориентир; конкретный тариф на дату требует проверки."]
+  ];
+  const key='japan-budget-manual-v1', baseKey='japan-budget-base-v2', rateKey='japan-budget-rates-v1';
+  let manual=[], editedBase=[];
   try{manual=JSON.parse(localStorage.getItem(key)||'[]')||[];}catch(e){manual=[];}
+  try{editedBase=JSON.parse(localStorage.getItem(baseKey)||'[]')||[];}catch(e){editedBase=[];}
+  const savedBase=base.map((x,i)=>Number.isFinite(Number(editedBase[i]))?Number(editedBase[i]):Number(x[2]));
+  let rates={jpyBuy:0.536, jpySell:0.5775, usdBuy:85, usdSell:87, updatedAt:'Не обновлено', source:'РБК «Рынок наличной валюты»'};
+  try{const saved=JSON.parse(localStorage.getItem(rateKey)||'null');if(saved&&Number.isFinite(saved.jpyBuy)&&Number.isFinite(saved.jpySell)&&Number.isFinite(saved.usdBuy)&&Number.isFinite(saved.usdSell)) rates=saved;}catch(e){}
   const money=n=>'¥'+Number(n||0).toLocaleString('ja-JP');
+  const rub=n=>'₽'+Number(n||0).toLocaleString('ru-RU',{maximumFractionDigits:0});
+  const usd=n=>'$'+Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0});
   function esc(s){return String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+  function getRubPerJpyForJpyToRub(){return rates.jpyBuy;}
+  function getRubPerJpyForRubToJpy(){return rates.jpySell;}
+  function getRubPerUsdForUsdToRub(){return rates.usdBuy;}
+  function getRubPerUsdForRubToUsd(){return rates.usdSell;}
+  function convert(amount,from,to){
+    amount=Number(amount);if(!Number.isFinite(amount)) return NaN;if(from===to)return amount;
+    let rubValue;
+    if(from==='RUB') rubValue=amount;
+    else if(from==='JPY') rubValue=amount*getRubPerJpyForJpyToRub();
+    else if(from==='USD') rubValue=amount*getRubPerUsdForUsdToRub();
+    if(to==='RUB') return rubValue;
+    if(to==='JPY') return rubValue/getRubPerJpyForRubToJpy();
+    if(to==='USD') return rubValue/getRubPerUsdForRubToUsd();
+    return NaN;
+  }
+  function renderRates(){
+    document.getElementById('rateJpyRub').textContent='₽'+(rates.jpyBuy*100).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})+' / 100 JPY покупка';
+    document.getElementById('rateUsdRub').textContent='₽'+rates.usdBuy.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})+' / USD покупка';
+    document.getElementById('budgetRatesNote').textContent='Наличный курс банков Москвы · покупка: JPY ₽'+(rates.jpyBuy*100).toFixed(2)+' / 100 JPY, USD ₽'+rates.usdBuy.toFixed(2)+' · продажа: JPY ₽'+(rates.jpySell*100).toFixed(2)+' / 100 JPY, USD ₽'+rates.usdSell.toFixed(2)+' · обновлено: '+rates.updatedAt+' · источник: '+rates.source+'.';
+    updateConverter();
+  }
   function render(){
-    baseList.innerHTML=base.map(x=>'<div class="budget-row"><div class="budget-row-main"><div class="budget-row-name">'+esc(x[1])+'</div><div class="budget-row-meta">'+esc(x[0])+' · '+esc(x[3])+' · '+esc(x[4])+'</div></div><div class="budget-row-amount">'+money(x[2])+'</div></div>').join('');
-    manualList.innerHTML=manual.length?manual.map((x,i)=>'<div class="budget-row manual"><div class="budget-row-main"><div class="budget-row-name">'+esc(x.name)+'</div><div class="budget-row-meta">'+esc(x.category)+(x.comment?' · '+esc(x.comment):'')+'</div></div><div class="budget-row-amount">'+money(x.amount)+' <button class="budget-delete" type="button" data-delete="'+i+'" aria-label="Удалить трату">×</button></div></div>').join(''):'<div class="budget-note">Дополнительных трат пока нет.</div>';
-    const baseTotal=base.reduce((s,x)=>s+Number(x[2]||0),0), manualTotal=manual.reduce((s,x)=>s+Number(x.amount||0),0);
-    document.getElementById('budgetTotal').textContent=money(baseTotal+manualTotal);
+    baseList.innerHTML=base.map((x,i)=>'<div class="budget-row"><div class="budget-row-main"><div class="budget-row-name">'+esc(x[1])+'</div><div class="budget-row-meta">'+esc(x[0])+' · '+esc(x[3])+' · '+esc(x[4])+'</div></div><div class="budget-row-amount">'+money(savedBase[i])+' <button class="budget-edit" type="button" data-edit-base="'+i+'">Изменить</button></div></div>').join('');
+    manualList.innerHTML=manual.length?manual.map((x,i)=>'<div class="budget-row manual"><div class="budget-row-main"><div class="budget-row-name">'+esc(x.name)+'</div><div class="budget-row-meta">'+esc(x.category)+(x.comment?' · '+esc(x.comment):'')+'</div></div><div class="budget-row-amount">'+money(x.amount)+' <button class="budget-edit" type="button" data-edit-manual="'+i+'">Изменить</button><button class="budget-delete" type="button" data-delete="'+i+'" aria-label="Удалить трату">×</button></div></div>').join(''):'<div class="budget-note">Дополнительных трат пока нет.</div>';
+    const baseTotal=savedBase.reduce((s,n)=>s+n,0),manualTotal=manual.reduce((s,x)=>s+Number(x.amount||0),0),total=baseTotal+manualTotal;
+    document.getElementById('budgetTotal').childNodes[0].nodeValue=money(total);
+    document.getElementById('budgetTotalRub').textContent='≈ '+rub(convert(total,'JPY','RUB'));
+    document.getElementById('budgetTotalUsd').textContent='≈ '+usd(convert(total,'JPY','USD'));
     document.getElementById('budgetCount').textContent=base.length+manual.length;
     document.getElementById('budgetManualTotal').textContent=money(manualTotal);
+    baseList.querySelectorAll('[data-edit-base]').forEach(b=>b.addEventListener('click',()=>{const i=Number(b.dataset.editBase),v=prompt('Новая сумма в JPY для «'+base[i][1]+'»',String(savedBase[i]));if(v===null)return;const n=Number(v);if(!Number.isFinite(n)||n<0)return;editedBase[i]=n;saveBase();render();}));
+    manualList.querySelectorAll('[data-edit-manual]').forEach(b=>b.addEventListener('click',()=>{const i=Number(b.dataset.editManual),v=prompt('Новая сумма в JPY для «'+manual[i].name+'»',String(manual[i].amount));if(v===null)return;const n=Number(v);if(!Number.isFinite(n)||n<0)return;manual[i].amount=n;save();render();}));
     manualList.querySelectorAll('[data-delete]').forEach(b=>b.addEventListener('click',()=>{manual.splice(Number(b.dataset.delete),1);save();render();}));
   }
   function save(){try{localStorage.setItem(key,JSON.stringify(manual));}catch(e){}}
+  function saveBase(){try{localStorage.setItem(baseKey,JSON.stringify(savedBase));}catch(e){}}
+  function updateConverter(){
+    const amount=Number(document.getElementById('budgetConvertAmount').value),from=document.getElementById('budgetConvertFrom').value,to=document.getElementById('budgetConvertTo').value;
+    const out=document.getElementById('budgetConverterResult');
+    if(!Number.isFinite(amount)){out.textContent='Введите сумму для конвертации';return;}
+    const result=convert(amount,from,to);out.textContent=Number.isFinite(result)?Number(amount).toLocaleString('ru-RU')+' '+from+' → '+Number(result).toLocaleString('ru-RU',{maximumFractionDigits:2})+' '+to:'Курс недоступен';
+  }
+  async function refreshRates(){
+    const btn=document.getElementById('refreshBudgetRates');btn.disabled=true;btn.textContent='Обновляем…';
+    try{
+      // RBC publishes live cash-bank quotes as a web page; the site itself cannot reliably
+      // fetch that HTML cross-origin. The refresh action opens the current cash market source
+      // so the user can verify the live quote without treating a stale quote as current.
+      window.open('https://cash.rbc.ru/?city=1','_blank','noopener');
+      document.getElementById('budgetRatesNote').textContent='Открыт актуальный наличный рынок РБК. После проверки котировок нажмите «Обновить курс» снова; автоматическое чтение банковской страницы из GitHub Pages не подтверждено из-за cross-origin ограничений.';
+    }finally{btn.disabled=false;btn.textContent='↻ Обновить курс';}
+  }
   function setOpen(v){modal.classList.toggle('open',v);document.body.style.overflow=v?'hidden':'';if(v) close.focus();}
-  open.addEventListener('click',()=>{render();setOpen(true);});
+  open.addEventListener('click',()=>{render();renderRates();setOpen(true);});
   close.addEventListener('click',()=>setOpen(false));
   modal.addEventListener('click',e=>{if(e.target===modal)setOpen(false);});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('open'))setOpen(false);});
   form.addEventListener('submit',e=>{
     e.preventDefault();
-    const name=document.getElementById('budgetName').value.trim(), amount=Number(document.getElementById('budgetAmount').value), category=document.getElementById('budgetCategory').value, comment=document.getElementById('budgetComment').value.trim();
-    if(!name||!Number.isFinite(amount)||amount<=0) return;
-    manual.push({name,amount,category,comment});
-    save(); form.reset(); render();
+    const name=document.getElementById('budgetName').value.trim(),amount=Number(document.getElementById('budgetAmount').value),category=document.getElementById('budgetCategory').value,comment=document.getElementById('budgetComment').value.trim();
+    if(!name||!Number.isFinite(amount)||amount<=0)return;
+    manual.push({name,amount,category,comment});save();form.reset();render();
   });
   document.getElementById('resetBudget').addEventListener('click',()=>{if(!manual.length)return;if(confirm('Удалить все добавленные вручную траты?')){manual=[];save();render();}});
-  render();
+  document.getElementById('refreshBudgetRates').addEventListener('click',refreshRates);
+  ['budgetConvertAmount','budgetConvertFrom','budgetConvertTo'].forEach(id=>document.getElementById(id).addEventListener('input',updateConverter));
+  render();renderRates();
 })();
 </script>
 
