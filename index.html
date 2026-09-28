@@ -266,6 +266,28 @@ html[data-theme="light"]{--bg:#f8f5f1;--card:#fff;--text:#2c2c2c;--muted:#6b5b53
 .audit-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:-18px;background:var(--bg);padding:2px 0 14px;z-index:2}
 .audit-dialog-head h2{margin:0;font-size:1.15rem}
 .audit-close{border:0;background:var(--accent-light);color:var(--accent);width:40px;height:40px;border-radius:50%;font-size:1.3rem;cursor:pointer;font-weight:800}
+
+.pretrip-wrap{display:flex;align-items:center;gap:6px;margin-bottom:14px}
+.pretrip-tab{flex:0 0 auto;border:none;background:var(--accent-light);color:var(--accent);padding:11px 14px;border-radius:12px;font-size:.82rem;font-weight:800;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;box-shadow:inset 0 0 0 1px var(--accent-soft)}
+.pretrip-tab:active{transform:scale(.97);background:var(--accent-soft)}
+.pretrip-modal{position:fixed;inset:0;background:rgba(0,0,0,.58);z-index:10000;display:none;padding:20px;overflow:auto;align-items:center;justify-content:center}
+.pretrip-modal.open{display:flex}
+.pretrip-dialog{width:min(680px,100%);max-height:min(88vh,820px);overflow:auto;background:var(--card);color:var(--text);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.3);padding:18px}
+.pretrip-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px;position:sticky;top:-18px;background:var(--card);padding:2px 0 12px;z-index:2}
+.pretrip-head h2{margin:0;padding:0;border:0;font-size:1.2rem;color:var(--accent)}
+.pretrip-close{width:38px;height:38px;border:0;border-radius:50%;background:var(--accent-light);color:var(--accent);font-size:1.5rem;cursor:pointer;line-height:1}
+.pretrip-intro{font-size:.82rem;color:var(--muted);margin:0 0 12px}
+.pretrip-progress{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--accent-light);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:.78rem;font-weight:800;color:var(--accent)}
+.pretrip-section{border-top:1px solid var(--border);padding-top:12px;margin-top:12px}
+.pretrip-section h3{margin-bottom:7px}
+.pretrip-list{display:grid;gap:5px}
+.pretrip-item{display:flex;align-items:flex-start;gap:10px;padding:9px 8px;border-radius:10px;cursor:pointer;transition:background .15s}
+.pretrip-item:hover{background:var(--accent-light)}
+.pretrip-item input{width:20px;height:20px;accent-color:var(--accent);flex:0 0 auto;margin-top:1px;cursor:pointer}
+.pretrip-item span{font-size:.86rem;line-height:1.4}
+.pretrip-item input:checked+span{text-decoration:line-through;color:var(--muted)}
+.pretrip-reset{margin-top:14px;width:100%;border:1px solid var(--border);background:transparent;color:var(--muted);padding:10px;border-radius:12px;font:inherit;font-weight:700;cursor:pointer}
+@media(max-width:520px){.pretrip-modal{padding:10px}.pretrip-dialog{max-height:94vh;padding:15px;border-radius:16px}}
 </style>
 </head>
 <body data-city="tokyo">
@@ -343,12 +365,64 @@ html[data-theme="light"]{--bg:#f8f5f1;--card:#fff;--text:#2c2c2c;--muted:#6b5b53
 </div>
 </header>
 <nav class="city-tabs" id="cityTabs">
+<button class="pretrip-tab" type="button" id="openPretrip" aria-label="Открыть чек-лист перед поездкой">✓ Чек-лист</button>
 <button class="active" data-city="tokyo"><svg class="ico"><use href="#i-city"></use></svg>Токио</button>
 <button data-city="kyoto"><svg class="ico"><use href="#i-torii"></use></svg>Киото</button>
 <button data-city="osaka">
 <svg class="ico" style="width:1.3em;height:1.3em;vertical-align:-0.3em"><use href="#i-osaka-castle"></use></svg>Осака
   </button>
 </nav>
+<div class="pretrip-modal" id="pretripModal" role="dialog" aria-modal="true" aria-labelledby="pretripTitle">
+  <div class="pretrip-dialog">
+    <div class="pretrip-head">
+      <h2 id="pretripTitle">Чек-лист перед поездкой</h2>
+      <button class="pretrip-close" type="button" id="closePretrip" aria-label="Закрыть чек-лист">×</button>
+    </div>
+    <p class="pretrip-intro">Отмечай подготовленные вещи. Отметки сохраняются на этом устройстве.</p>
+    <div class="pretrip-progress"><span id="pretripProgress">Готово: 0 из 0</span><span>Япония · 18.11–01.12.2026</span></div>
+    <div class="pretrip-section"><h3>Документы и деньги</h3><div class="pretrip-list">
+      <label class="pretrip-item"><input type="checkbox" data-check="passport"><span>Заграничный паспорт</span></label>
+      <label class="pretrip-item"><input type="checkbox" data-check="tickets"><span>Электронные билеты / itinerary сохранены в телефоне</span></label>
+      <label class="pretrip-item"><input type="checkbox" data-check="insurance"><span>Страховка и данные полиса</span></label>
+      <label class="pretrip-item"><input type="checkbox" data-check="hotel"><span>Подтверждения отелей и адреса проживания</span></label>
+      <label class="pretrip-item"><input type="checkbox" data-check="reservations"><span>Подтверждения важных бронирований и билетов</span></label>
+      <label class="pretrip-item"><input type="checkbox" data-check="copies"><span>Копии основных документов сохранены офлайн</span></label>
+      <label class="pretrip-item"><input type="checkbox" data-check="cards"><span>Банковские карты проверены; резервный способ оплаты подготовлен</span></label>
+      <label class="pretrip-item"><input type="checkbox" data-check="cash"><span>Небольшой запас наличных иены подготовлен</span></label>
+    </div></div>
+    <div class="pretrip-section"><h3>Телефон и электроника</h3><div class="pretrip-list">
+      <label class="pretrip-item"><input type="checkbox" data-check="phone"><span>Телефон и зарядное устройство</span></label>
+      <label class="pretrip-item"><input type="checkbox" data-check="powerbank"><span>Повербанк заряжен</span></label>
+      <label class="pretrip-item"><input type="checkbox" data-check="adapter"><span>Адаптер питания для японских розеток Type A, если нужен</span></label>
+      <label class="pretrip-item"><input type="checkbox" data-check="cables"><span>Кабели и необходимые переходники</span></label>
+      <label class="pretrip-item"><input type="checkbox" data-check="sim"><span>eSIM / SIM / роуминг подготовлен</span></label>
+      <label class="pretrip-item"><input type="checkbox" data-check="offline"><span>Офлайн-карты, itinerary и важные адреса доступны без интернета</span></label>
+    </div></div>
+    <div class="pretrip-section"><h3>Одежда и обувь</h3><div class="pretrip-list">
+      <label class="pretrip-item"><input type="checkbox" data-check="outerwear"><span>Тёплая верхняя одежда для конца ноября — начала декабря</span></label>
+      <label class="pretrip-item"><input type="checkbox" data-check="layers"><span>Слои одежды для переменной температуры</span></label>
+      <label class="pretrip-item"><input type="checkbox" data-check="shoes"><span>Удобная обувь для длительной ходьбы</span></label>
+      <label class="pretrip-item"><input type="checkbox" data-check="rain"><span>Компактная защита от дождя</span></label>
+      <label class="pretrip-item"><input type="checkbox" data-check="sleepwear"><span>Одежда для сна и сменное бельё</span></label>
+    </div></div>
+    <div class="pretrip-section"><h3>Здоровье и личные вещи</h3><div class="pretrip-list">
+      <label class="pretrip-item"><input type="checkbox" data-check="meds"><span>Необходимые лекарства и личная аптечка</span></label>
+      <label class="pretrip-item"><input type="checkbox" data-check="toiletries"><span>Средства гигиены и личного ухода</span></label>
+      <label class="pretrip-item"><input type="checkbox" data-check="glasses"><span>Очки / линзы и принадлежности, если нужны</span></label>
+      <label class="pretrip-item"><input type="checkbox" data-check="bag"><span>Небольшой дневной рюкзак или сумка</span></label>
+      <label class="pretrip-item"><input type="checkbox" data-check="bottle"><span>Многоразовая бутылка для воды</span></label>
+      <label class="pretrip-item"><input type="checkbox" data-check="umbrella"><span>Компактный зонт, если предпочитаешь свой</span></label>
+    </div></div>
+    <div class="pretrip-section"><h3>Перед выходом из дома</h3><div class="pretrip-list">
+      <label class="pretrip-item"><input type="checkbox" data-check="luggage"><span>Багаж собран и проверен</span></label>
+      <label class="pretrip-item"><input type="checkbox" data-check="weight"><span>Вес багажа проверен по условиям авиабилета</span></label>
+      <label class="pretrip-item"><input type="checkbox" data-check="alarms"><span>Будильники и напоминания о вылете установлены</span></label>
+      <label class="pretrip-item"><input type="checkbox" data-check="home"><span>Домашние дела перед отъездом завершены</span></label>
+    </div></div>
+    <button class="pretrip-reset" type="button" id="resetPretrip">Сбросить все отметки</button>
+  </div>
+</div>
+
 <nav class="mini-nav"></nav>
 <div class="search-box card" id="site-search">
 <label for="siteSearchInput"><strong>Поиск по маршруту</strong></label>
@@ -1422,6 +1496,25 @@ window.addEventListener('offline', loadWeather);
   close.addEventListener('click',()=>setOpen(false));
   modal.addEventListener('click',e=>{if(e.target===modal)setOpen(false);});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('open'))setOpen(false);});
+})();
+</script>
+
+<script>
+(function initPretripChecklist(){
+  const modal=document.getElementById('pretripModal'),open=document.getElementById('openPretrip'),close=document.getElementById('closePretrip'),reset=document.getElementById('resetPretrip');
+  if(!modal||!open||!close) return;
+  const items=[...modal.querySelectorAll('input[data-check]')], key='japan-pretrip-checklist-v1';
+  let saved={};
+  try{saved=JSON.parse(localStorage.getItem(key)||'{}')||{};}catch(e){saved={};}
+  items.forEach(input=>{input.checked=saved[input.dataset.check]===true;input.addEventListener('change',()=>{saved[input.dataset.check]=input.checked;try{localStorage.setItem(key,JSON.stringify(saved));}catch(e){};update();});});
+  function update(){const done=items.filter(i=>i.checked).length;document.getElementById('pretripProgress').textContent=`Готово: ${done} из ${items.length}`;}
+  function setOpen(v){modal.classList.toggle('open',v);document.body.style.overflow=v?'hidden':'';if(v) close.focus();}
+  open.addEventListener('click',()=>setOpen(true));
+  close.addEventListener('click',()=>setOpen(false));
+  modal.addEventListener('click',e=>{if(e.target===modal)setOpen(false);});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('open'))setOpen(false);});
+  reset.addEventListener('click',()=>{items.forEach(i=>{i.checked=false;});saved={};try{localStorage.removeItem(key);}catch(e){};update();});
+  update();
 })();
 </script>
 </body>
