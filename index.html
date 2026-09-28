@@ -1626,7 +1626,7 @@ window.addEventListener('offline', loadWeather);
   try{manual=JSON.parse(localStorage.getItem(key)||'[]')||[];}catch(e){manual=[];}
   try{editedBase=JSON.parse(localStorage.getItem(baseKey)||'[]')||[];}catch(e){editedBase=[];}
   const savedBase=base.map((x,i)=>Number.isFinite(Number(editedBase[i]))?Number(editedBase[i]):Number(x[2]));
-  let rates={jpyBuy:0.536, jpySell:0.5775, usdBuy:85, usdSell:87, updatedAt:'Не обновлено', source:'РБК «Рынок наличной валюты»'};
+  let rates={jpyBuy:0.543, jpySell:0.5995, usdBuy:85, usdSell:87, updatedAt:'28.09.2026 · проверенный снимок', source:'РБК «Рынок наличной валюты», Москва'};
   try{const saved=JSON.parse(localStorage.getItem(rateKey)||'null');if(saved&&Number.isFinite(saved.jpyBuy)&&Number.isFinite(saved.jpySell)&&Number.isFinite(saved.usdBuy)&&Number.isFinite(saved.usdSell)) rates=saved;}catch(e){}
   const money=n=>'¥'+Number(n||0).toLocaleString('ja-JP');
   const rub=n=>'₽'+Number(n||0).toLocaleString('ru-RU',{maximumFractionDigits:0});
