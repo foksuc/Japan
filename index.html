@@ -288,6 +288,41 @@ html[data-theme="light"]{--bg:#f8f5f1;--card:#fff;--text:#2c2c2c;--muted:#6b5b53
 .pretrip-item input:checked+span{text-decoration:line-through;color:var(--muted)}
 .pretrip-reset{margin-top:14px;width:100%;border:1px solid var(--border);background:transparent;color:var(--muted);padding:10px;border-radius:12px;font:inherit;font-weight:700;cursor:pointer}
 @media(max-width:520px){.pretrip-modal{padding:10px}.pretrip-dialog{max-height:94vh;padding:15px;border-radius:16px}}
+
+/* Budget */
+.budget-modal{position:fixed;inset:0;background:rgba(0,0,0,.58);z-index:10000;display:none;align-items:flex-start;justify-content:center;padding:20px 12px;overflow:auto}
+.budget-modal.open{display:flex}
+.budget-dialog{width:min(720px,100%);background:var(--card);color:var(--text);border-radius:20px;box-shadow:0 18px 60px rgba(0,0,0,.35);margin:auto;padding:18px}
+.budget-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px}
+.budget-head h2{margin:0;border:0;padding:0;font-size:1.25rem}
+.budget-close{width:38px;height:38px;border:0;border-radius:50%;background:var(--accent-light);color:var(--accent);font-size:1.5rem;cursor:pointer}
+.budget-summary{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:8px;margin:14px 0}
+.budget-total{background:var(--accent);color:#fff;border-radius:14px;padding:14px}
+.budget-stat{background:var(--accent-light);border:1px solid var(--border);border-radius:14px;padding:12px}
+.budget-label{font-size:.67rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700}
+.budget-total .budget-label{color:rgba(255,255,255,.85)}
+.budget-value{font-size:1.15rem;font-weight:850;margin-top:3px;font-variant-numeric:tabular-nums}
+.budget-total .budget-value{font-size:1.45rem}
+.budget-note{font-size:.78rem;color:var(--muted);line-height:1.45;margin:8px 0 14px}
+.budget-section-title{font-size:.88rem;font-weight:850;color:var(--accent);margin:18px 0 8px}
+.budget-list{display:flex;flex-direction:column;gap:7px}
+.budget-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:10px 12px;background:var(--accent-light);border:1px solid var(--border);border-radius:12px}
+.budget-row-main{min-width:0}
+.budget-row-name{font-size:.82rem;font-weight:750}
+.budget-row-meta{font-size:.68rem;color:var(--muted);margin-top:2px}
+.budget-row-amount{font-size:.82rem;font-weight:800;color:var(--accent);white-space:nowrap;font-variant-numeric:tabular-nums}
+.budget-row.optional{opacity:.82}
+.budget-row.manual{background:var(--card)}
+.budget-delete{border:0;background:transparent;color:var(--muted);cursor:pointer;margin-left:6px}
+.budget-form{display:grid;grid-template-columns:1fr 120px;gap:8px;margin-top:10px}
+.budget-form input,.budget-form select{width:100%;min-height:42px;border:1px solid var(--border);border-radius:11px;background:var(--card);color:var(--text);padding:9px 11px;font:inherit;font-size:.82rem}
+.budget-form textarea{grid-column:1/-1;min-height:70px;resize:vertical;border:1px solid var(--border);border-radius:11px;background:var(--card);color:var(--text);padding:9px 11px;font:inherit;font-size:.82rem}
+.budget-add{grid-column:1/-1;border:0;border-radius:12px;background:var(--accent);color:#fff;min-height:44px;font:inherit;font-size:.82rem;font-weight:800;cursor:pointer}
+.budget-missing{margin-top:12px;padding:12px 14px;background:#fff8e7;border-left:4px solid #e0a800;border-radius:0 12px 12px 0;font-size:.78rem;line-height:1.5}
+.budget-reset{border:1px solid var(--border);background:transparent;color:var(--muted);border-radius:10px;padding:8px 11px;font:inherit;font-size:.72rem;font-weight:700;cursor:pointer;margin-top:10px}
+.budget-tab{background:var(--accent-light)!important;color:var(--accent)!important}
+@media(max-width:520px){.budget-summary{grid-template-columns:1fr 1fr}.budget-total{grid-column:1/-1}.budget-form{grid-template-columns:1fr}.budget-form textarea,.budget-add{grid-column:1}.budget-dialog{padding:14px}}
+
 </style>
 </head>
 <body data-city="tokyo">
@@ -371,7 +406,37 @@ html[data-theme="light"]{--bg:#f8f5f1;--card:#fff;--text:#2c2c2c;--muted:#6b5b53
 <button data-city="osaka">
 <svg class="ico" style="width:1.3em;height:1.3em;vertical-align:-0.3em"><use href="#i-osaka-castle"></use></svg>Осака
   </button>
+<button class="budget-tab" type="button" id="openBudget" aria-label="Открыть бюджет поездки">¥ Бюджет</button>
 </nav>
+<div class="budget-modal" id="budgetModal" role="dialog" aria-modal="true" aria-labelledby="budgetTitle">
+  <div class="budget-dialog">
+    <div class="budget-head">
+      <h2 id="budgetTitle">Бюджет поездки</h2>
+      <button class="budget-close" type="button" id="closeBudget" aria-label="Закрыть бюджет">×</button>
+    </div>
+    <div class="budget-summary">
+      <div class="budget-total"><div class="budget-label">Итого учтено</div><div class="budget-value" id="budgetTotal">¥0</div></div>
+      <div class="budget-stat"><div class="budget-label">Расходов</div><div class="budget-value" id="budgetCount">0</div></div>
+      <div class="budget-stat"><div class="budget-label">Добавлено вами</div><div class="budget-value" id="budgetManualTotal">¥0</div></div>
+    </div>
+    <p class="budget-note">Сумма включает только числовые расходы, зафиксированные в текущем проекте. Неподтверждённые цены не подставляются автоматически. Ручные траты сохраняются на этом устройстве.</p>
+    <div class="budget-section-title">Расходы поездки</div>
+    <div class="budget-list" id="budgetBaseList"></div>
+    <div class="budget-section-title">Мои дополнительные траты</div>
+    <form class="budget-form" id="budgetForm">
+      <input id="budgetName" type="text" maxlength="80" placeholder="Что оплачено" required>
+      <input id="budgetAmount" type="number" min="0" step="1" inputmode="numeric" placeholder="¥ сумма" required>
+      <select id="budgetCategory">
+        <option>Транспорт</option><option>Билеты</option><option>Еда</option><option>Отель</option><option>Покупки</option><option>Другое</option>
+      </select>
+      <textarea id="budgetComment" maxlength="240" placeholder="Комментарий: где, за что, дата, способ оплаты и т.п."></textarea>
+      <button class="budget-add" type="submit">＋ Добавить трату</button>
+    </form>
+    <div class="budget-list" id="budgetManualList"></div>
+    <div class="budget-missing"><strong>Не включено в итог:</strong> авиабилеты — цена в доступном E-itinerary не подтверждена; проживание — цена не зафиксирована в текущем аудите; питание и часть городского транспорта — стоимость требует проверки; Kiyomizu-dera и USJ — точная цена для даты поездки требует проверки; Minoh-Kayano → Katsuo-ji и другие неподтверждённые тарифы также не подставляются.</div>
+    <button class="budget-reset" type="button" id="resetBudget">Сбросить мои дополнительные траты</button>
+  </div>
+</div>
 <div class="pretrip-modal" id="pretripModal" role="dialog" aria-modal="true" aria-labelledby="pretripTitle">
   <div class="pretrip-dialog">
     <div class="pretrip-head">
@@ -1517,5 +1582,43 @@ window.addEventListener('offline', loadWeather);
   update();
 })();
 </script>
+<script>
+(function initBudget(){
+  const modal=document.getElementById('budgetModal'),open=document.getElementById('openBudget'),close=document.getElementById('closeBudget');
+  const form=document.getElementById('budgetForm'),baseList=document.getElementById('budgetBaseList'),manualList=document.getElementById('budgetManualList');
+  if(!modal||!open||!close||!form) return;
+  const base=[["Транспорт","Narita → Asakusa, Keisei Access Express","1290","18.11","Подтверждённый взрослый тариф; IC-вариант ¥1,276 не включён."],["Билеты","Shinjuku Gyoen","500","19.11","Взрослый вход."],["Билеты","SHIBUYA SKY","3400","19.11","Текущая цена web-билета после 15:00; продажа на дату открывается позже."],["Транспорт","Канатная дорога Mount Takao, туда-обратно","980","20.11","Взрослый round trip."],["Билеты","Koishikawa Korakuen, дневной вход","300","21.11","Взрослый вход."],["Транспорт","Tokyo → Kyoto, Hikari reserved","13850","22.11","Текущий опубликованный ориентир; конкретный тариф на дату требует проверки."],["Билеты","Kinkaku-ji","500","23.11","Взрослый вход."],["Билеты","Ryoan-ji","600","23.11","Взрослый вход."],["Билеты","Tenryu-ji, сад","500","24.11","Вход в сад; здания отдельно не включены."],["Транспорт","Kyoto → Osaka, JR Special Rapid","580","25.11","Взрослый тариф в одну сторону."],["Билеты","Osaka Castle Museum","1200","25.11","Взрослый вход."],["Транспорт","Osaka-Namba → Nishikujo, Hanshin Namba Line","400","26.11","Взрослый тариф; участок Nishikujo → Universal City требует отдельной проверки."],["Транспорт","Osaka-Namba → Kintetsu-Nara","680","27.11","Обычный взрослый тариф; Limited Express не включён."],["Билеты","Tōdai-ji","800","27.11","Взрослый вход."],["Билеты","Kasuga Taisha, special worship","700","27.11","Опциональный special worship; не общий вход в территорию."],["Транспорт","Osaka ↔ Himeji, JR Special Rapid","2980","28.11","¥1,490 в одну сторону × 2."],["Билеты","Himeji Castle + Koko-en, combo","2600","28.11","Комбинированный билет; вместо отдельных ¥2,500 + ¥400."],["Билеты","Katsuo-ji","500","29.11","Взрослый вход."],["Транспорт","Minoh-Kayano ↔ Katsuo-ji, Hankyu Bus","1600","29.11","¥800 в одну сторону × 2; безналичная оплата."],["Билеты","Tsutenkaku","1500","29.11","Взрослый билет."],["Транспорт","Shin-Osaka → Tokyo, Hikari reserved","14400","30.11","Текущий опубликованный ориентир; конкретный тариф на дату требует проверки."]];
+  const key='japan-budget-manual-v1';
+  let manual=[];
+  try{manual=JSON.parse(localStorage.getItem(key)||'[]')||[];}catch(e){manual=[];}
+  const money=n=>'¥'+Number(n||0).toLocaleString('ja-JP');
+  function esc(s){return String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+  function render(){
+    baseList.innerHTML=base.map(x=>'<div class="budget-row"><div class="budget-row-main"><div class="budget-row-name">'+esc(x[1])+'</div><div class="budget-row-meta">'+esc(x[0])+' · '+esc(x[3])+' · '+esc(x[4])+'</div></div><div class="budget-row-amount">'+money(x[2])+'</div></div>').join('');
+    manualList.innerHTML=manual.length?manual.map((x,i)=>'<div class="budget-row manual"><div class="budget-row-main"><div class="budget-row-name">'+esc(x.name)+'</div><div class="budget-row-meta">'+esc(x.category)+(x.comment?' · '+esc(x.comment):'')+'</div></div><div class="budget-row-amount">'+money(x.amount)+' <button class="budget-delete" type="button" data-delete="'+i+'" aria-label="Удалить трату">×</button></div></div>').join(''):'<div class="budget-note">Дополнительных трат пока нет.</div>';
+    const baseTotal=base.reduce((s,x)=>s+Number(x[2]||0),0), manualTotal=manual.reduce((s,x)=>s+Number(x.amount||0),0);
+    document.getElementById('budgetTotal').textContent=money(baseTotal+manualTotal);
+    document.getElementById('budgetCount').textContent=base.length+manual.length;
+    document.getElementById('budgetManualTotal').textContent=money(manualTotal);
+    manualList.querySelectorAll('[data-delete]').forEach(b=>b.addEventListener('click',()=>{manual.splice(Number(b.dataset.delete),1);save();render();}));
+  }
+  function save(){try{localStorage.setItem(key,JSON.stringify(manual));}catch(e){}}
+  function setOpen(v){modal.classList.toggle('open',v);document.body.style.overflow=v?'hidden':'';if(v) close.focus();}
+  open.addEventListener('click',()=>{render();setOpen(true);});
+  close.addEventListener('click',()=>setOpen(false));
+  modal.addEventListener('click',e=>{if(e.target===modal)setOpen(false);});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('open'))setOpen(false);});
+  form.addEventListener('submit',e=>{
+    e.preventDefault();
+    const name=document.getElementById('budgetName').value.trim(), amount=Number(document.getElementById('budgetAmount').value), category=document.getElementById('budgetCategory').value, comment=document.getElementById('budgetComment').value.trim();
+    if(!name||!Number.isFinite(amount)||amount<=0) return;
+    manual.push({name,amount,category,comment});
+    save(); form.reset(); render();
+  });
+  document.getElementById('resetBudget').addEventListener('click',()=>{if(!manual.length)return;if(confirm('Удалить все добавленные вручную траты?')){manual=[];save();render();}});
+  render();
+})();
+</script>
+
 </body>
 </html>
