@@ -337,6 +337,10 @@ html[data-theme="light"]{--bg:#f8f5f1;--card:#fff;--text:#2c2c2c;--muted:#6b5b53
 .budget-total-sub{display:block;font-size:.68rem;font-weight:650;opacity:.9;margin-top:3px}
 @media(max-width:520px){.budget-rate-grid{grid-template-columns:1fr}}
 
+
+.budget-edit{border:0;background:transparent;color:var(--accent);font:inherit;font-size:.72rem;font-weight:800;cursor:pointer;padding:2px 5px;margin-left:4px}.budget-edit-panel{display:none;gap:6px;align-items:center;margin-top:7px}.budget-edit-panel.open{display:flex}.budget-edit-panel input,.budget-edit-panel select{min-width:0;width:100px;min-height:32px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);padding:5px 7px;font:inherit;font-size:.75rem}.budget-edit-panel select{width:74px}.budget-edit-save,.budget-edit-cancel{border:0;border-radius:8px;padding:6px 8px;font:inherit;font-size:.7rem;font-weight:800;cursor:pointer}.budget-edit-save{background:var(--accent);color:#fff}.budget-edit-cancel{background:var(--accent-light);color:var(--accent)}
+@media(max-width:520px){.budget-edit-panel{flex-wrap:wrap}.budget-edit-panel input{width:90px}}
+
 </style>
 </head>
 <body data-city="tokyo">
@@ -1661,7 +1665,12 @@ const base=[
 ["Билеты","Tsutenkaku","1500","29.11","Взрослый билет."],
 ["Транспорт","Shin-Osaka → Tokyo, Hikari reserved","14400","30.11","Текущий стандартный тариф; конкретный поезд/тариф на дату требует проверки."]
 ];
-const key='japan-budget-manual-v1';
+const baseOverridesKey='japan-budget-base-overrides-v1';
+  let baseOverrides={};
+  try{baseOverrides=JSON.parse(localStorage.getItem(baseOverridesKey)||'{}')||{};}catch(e){baseOverrides={};}
+  function baseAmount(i){return Object.prototype.hasOwnProperty.call(baseOverrides,i)?Number(baseOverrides[i]):Number(base[i][2]||0);}
+  function saveBaseOverrides(){try{localStorage.setItem(baseOverridesKey,JSON.stringify(baseOverrides));}catch(e){}}
+  const key='japan-budget-manual-v1';
   const cashRates={JPY_RUB_SELL:0.56,USD_RUB_SELL:80.92,source:'Valuta24 · Москва',date:'28.09.2026',online:false};function updateConverter(){
     const amount=Number(document.getElementById('rateAmount').value||0), cur=document.getElementById('rateCurrency').value;
     let jpy=cur==='JPY'?amount:(cur==='RUB'?amount/cashRates.JPY_RUB_SELL:(amount*cashRates.USD_RUB_SELL)/cashRates.JPY_RUB_SELL);
@@ -1674,16 +1683,33 @@ const key='japan-budget-manual-v1';
   const money=n=>'¥'+Number(n||0).toLocaleString('ja-JP');
   function esc(s){return String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
   function render(){
-    baseList.innerHTML=base.map(x=>'<div class="budget-row"><div class="budget-row-main"><div class="budget-row-name">'+esc(x[1])+'</div><div class="budget-row-meta">'+esc(x[0])+' · '+esc(x[3])+' · '+esc(x[4])+'</div></div><div class="budget-row-amount">'+money(x[2])+'</div></div>').join('');
-    manualList.innerHTML=manual.length?manual.map((x,i)=>'<div class="budget-row manual"><div class="budget-row-main"><div class="budget-row-name">'+esc(x.name)+'</div><div class="budget-row-meta">'+esc(x.category)+' · '+esc(x.currency)+(x.comment?' · '+esc(x.comment):'')+'</div></div><div class="budget-row-amount">'+money(x.jpyAmount)+' <button class="budget-delete" type="button" data-delete="'+i+'" aria-label="Удалить трату">×</button></div></div>').join(''):'<div class="budget-note">Дополнительных трат пока нет.</div>';
-    const baseTotal=base.reduce((s,x)=>s+Number(x[2]||0),0), manualTotal=manual.reduce((s,x)=>s+Number(x.jpyAmount||0),0);
+    baseList.innerHTML=base.map((x,i)=>'<div class="budget-row"><div class="budget-row-main"><div class="budget-row-name">'+esc(x[1])+' <button class="budget-edit" type="button" data-edit-base="'+i+'">Изменить</button></div><div class="budget-row-meta">'+esc(x[0])+' · '+esc(x[3])+' · '+esc(x[4])+'</div><div class="budget-edit-panel" id="base-edit-'+i+'"><input type="number" min="0" step="0.01" value="'+baseAmount(i)+'" aria-label="Сумма '+esc(x[1])+'"><select aria-label="Валюта '+esc(x[1])+'"><option value="JPY">JPY</option></select><button class="budget-edit-save" type="button" data-save-base="'+i+'">Сохранить</button><button class="budget-edit-cancel" type="button" data-cancel-base="'+i+'">Отмена</button></div></div><div class="budget-row-amount">'+money(baseAmount(i))+'</div></div>').join('');
+    manualList.innerHTML=manual.length?manual.map((x,i)=>'<div class="budget-row manual"><div class="budget-row-main"><div class="budget-row-name">'+esc(x.name)+' <button class="budget-edit" type="button" data-edit-manual="'+i+'">Изменить</button></div><div class="budget-row-meta">'+esc(x.category)+' · '+esc(x.currency)+(x.comment?' · '+esc(x.comment):'')+'</div><div class="budget-edit-panel" id="manual-edit-'+i+'"><input type="number" min="0" step="0.01" value="'+Number(x.amount||0)+'" aria-label="Сумма '+esc(x.name)+'"><select aria-label="Валюта '+esc(x.name)+'"><option value="JPY" '+(x.currency==='JPY'?'selected':'')+'>JPY</option><option value="RUB" '+(x.currency==='RUB'?'selected':'')+'>RUB</option><option value="USD" '+(x.currency==='USD'?'selected':'')+'>USD</option></select><button class="budget-edit-save" type="button" data-save-manual="'+i+'">Сохранить</button><button class="budget-edit-cancel" type="button" data-cancel-manual="'+i+'">Отмена</button></div></div><div class="budget-row-amount">'+money(x.jpyAmount)+' <button class="budget-delete" type="button" data-delete="'+i+'" aria-label="Удалить трату">×</button></div></div>').join(''):'<div class="budget-note">Дополнительных трат пока нет.</div>';
+    const baseTotal=base.reduce((s,x,i)=>s+baseAmount(i),0), manualTotal=manual.reduce((s,x)=>s+Number(x.jpyAmount||0),0);
     const totalJpy=baseTotal+manualTotal, totalRub=totalJpy*cashRates.JPY_RUB_SELL, totalUsd=totalRub/cashRates.USD_RUB_SELL;
     const dailyEl=document.getElementById('budgetDailyList');
     if(dailyEl) dailyEl.innerHTML=daily.map(x=>'<div class="budget-row"><div class="budget-row-main"><div class="budget-row-name">'+esc(x[1])+'</div><div class="budget-row-meta">'+esc(x[3])+'</div></div><div class="budget-row-amount">'+money(x[2])+'</div></div>').join('');
     document.getElementById('budgetTotal').innerHTML=money(totalJpy)+'<span class="budget-total-sub">(≈ ₽'+Math.round(totalRub).toLocaleString('ru-RU')+' / ;
     manualList.querySelectorAll('[data-delete]').forEach(b=>b.addEventListener('click',()=>{manual.splice(Number(b.dataset.delete),1);save();render();}));
   }
-  function save(){try{localStorage.setItem(key,JSON.stringify(manual));}catch(e){}}
+  document.querySelectorAll('[data-edit-manual]').forEach(b=>b.addEventListener('click',()=>document.getElementById('manual-edit-'+b.dataset.editManual)?.classList.toggle('open')));
+    document.querySelectorAll('[data-cancel-manual]').forEach(b=>b.addEventListener('click',()=>document.getElementById('manual-edit-'+b.dataset.cancelManual)?.classList.remove('open')));
+    document.querySelectorAll('[data-save-manual]').forEach(b=>b.addEventListener('click',()=>{
+      const i=Number(b.dataset.saveManual), panel=document.getElementById('manual-edit-'+i), input=panel?.querySelector('input'), select=panel?.querySelector('select');
+      const amount=Number(input?.value), currency=select?.value||'JPY';
+      if(!Number.isFinite(amount)||amount<=0)return;
+      const jpyAmount=currency==='JPY'?amount:(currency==='RUB'?amount/cashRates.JPY_RUB_SELL:(amount*cashRates.USD_RUB_SELL)/cashRates.JPY_RUB_SELL);
+      manual[i]={...manual[i],amount,currency,jpyAmount}; save(); render();
+    }));
+    document.querySelectorAll('[data-edit-base]').forEach(b=>b.addEventListener('click',()=>document.getElementById('base-edit-'+b.dataset.editBase)?.classList.toggle('open')));
+    document.querySelectorAll('[data-cancel-base]').forEach(b=>b.addEventListener('click',()=>document.getElementById('base-edit-'+b.dataset.cancelBase)?.classList.remove('open')));
+    document.querySelectorAll('[data-save-base]').forEach(b=>b.addEventListener('click',()=>{
+      const i=Number(b.dataset.saveBase), panel=document.getElementById('base-edit-'+i), input=panel?.querySelector('input');
+      const amount=Number(input?.value);
+      if(!Number.isFinite(amount)||amount<0)return;
+      baseOverrides[i]=amount; saveBaseOverrides(); render();
+    }));
+    function save(){try{localStorage.setItem(key,JSON.stringify(manual));}catch(e){}}
   function setOpen(v){modal.classList.toggle('open',v);document.body.style.overflow=v?'hidden':'';if(v) close.focus();}
   open.addEventListener('click',()=>{render();setOpen(true);});
   close.addEventListener('click',()=>setOpen(false));
