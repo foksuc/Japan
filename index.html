@@ -1637,7 +1637,7 @@ window.addEventListener('offline', loadWeather);
   try{editedBase=JSON.parse(localStorage.getItem(baseKey)||'[]')||[];}catch(e){editedBase=[];}
   const savedBase=base.map((x,i)=>Number.isFinite(Number(editedBase[i]))?Number(editedBase[i]):Number(x[2]));
   let rates={jpyRub:null,jpyUsd:null,usdRub:null,updatedAt:'Не загружен',source:'Frankfurter API (центральные банки / официальные источники)'};
-  try{const saved=JSON.parse(localStorage.getItem(rateKey)||'null');if(saved&&Number.isFinite(saved.jpyBuy)&&Number.isFinite(saved.jpySell)&&Number.isFinite(saved.usdBuy)&&Number.isFinite(saved.usdSell)) rates=saved;}catch(e){}
+  try{const saved=JSON.parse(localStorage.getItem(rateKey)||'null');if(saved&&Number.isFinite(saved.jpyRub)&&Number.isFinite(saved.jpyUsd)&&Number.isFinite(saved.usdRub)) rates=saved;}catch(e){}
   const money=n=>'¥'+Number(n||0).toLocaleString('ja-JP');
   const rub=n=>'₽'+Number(n||0).toLocaleString('ru-RU',{maximumFractionDigits:0});
   const usd=n=>'$'+Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0});
