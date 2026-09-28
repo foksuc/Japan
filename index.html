@@ -1245,7 +1245,8 @@ html[data-theme="light"]{--bg:#f8f5f1;--card:#fff;--text:#2c2c2c;--muted:#6b5b53
     items.push({label:title,meta:el.textContent.replace(/\s+/g,' ').trim(),id:el.id,city,text:day.textContent.toLowerCase()});
   });
   function esc(s){return String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
-  const q=input.value.trim().toLowerCase();
+  function render(){
+    const q=input.value.trim().toLowerCase();
     if(!q){out.innerHTML='<div class="search-empty">Введите день, город, локацию, ресторан или транспорт.</div>';return;}
     const hits=items.filter(x=>x.text.includes(q)||x.meta.toLowerCase().includes(q)||x.label.toLowerCase().includes(q)).slice(0,20);
     if(!hits.length){out.innerHTML='<div class="search-empty">Ничего не найдено.</div>';return;}
@@ -2074,116 +2075,10 @@ window.addEventListener('offline', loadWeather);
 })();
 </script>
 
-<script>
-(function initAuditModal(){
-  const modal=document.getElementById('auditModal'), open=document.getElementById('openAudit'), close=document.getElementById('closeAudit');
-  if(!modal||!open||!close) return;
-  function setOpen(v){modal.classList.toggle('open',v);document.body.style.overflow=v?'hidden':'';if(v) close.focus();}
-  open.addEventListener('click',()=>setOpen(true));
-  close.addEventListener('click',()=>setOpen(false));
-  modal.addEventListener('click',e=>{if(e.target===modal)setOpen(false);});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('open'))setOpen(false);});
-})();
-</script>
 
-<script>
-(function initPretripChecklist(){
-  const modal=document.getElementById('pretripModal'),open=document.getElementById('openPretrip'),close=document.getElementById('closePretrip'),reset=document.getElementById('resetPretrip');
-  if(!modal||!open||!close) return;
-  const items=[...modal.querySelectorAll('input[data-check]')], key='japan-pretrip-checklist-v1';
-  let saved={};
-  try{saved=JSON.parse(localStorage.getItem(key)||'{}')||{};}catch(e){saved={};}
-  items.forEach(input=>{input.checked=saved[input.dataset.check]===true;input.addEventListener('change',()=>{saved[input.dataset.check]=input.checked;try{localStorage.setItem(key,JSON.stringify(saved));}catch(e){};update();});});
-  function update(){const done=items.filter(i=>i.checked).length;document.getElementById('pretripProgress').textContent=`Готово: ${done} из ${items.length}`;}
-  function setOpen(v){modal.classList.toggle('open',v);document.body.style.overflow=v?'hidden':'';if(v) close.focus();}
-  open.addEventListener('click',()=>setOpen(true));
-  close.addEventListener('click',()=>setOpen(false));
-  modal.addEventListener('click',e=>{if(e.target===modal)setOpen(false);});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('open'))setOpen(false);});
-  reset.addEventListener('click',()=>{items.forEach(i=>{i.checked=false;});saved={};try{localStorage.removeItem(key);}catch(e){};update();});
-  update();
-})();
-</script>
-<script>
-(function initBudget(){
-  const modal=document.getElementById('budgetModal'),open=document.getElementById('openBudget'),close=document.getElementById('closeBudget');
-  const form=document.getElementById('budgetForm'),baseList=document.getElementById('budgetBaseList'),manualList=document.getElementById('budgetManualList');
-  if(!modal||!open||!close||!form) return;
-  const daily=[
-["18.11","День 1 · Tokyo",1290,"Еда/прочий транспорт: требует проверки"],
-["19.11","День 2 · Tokyo",3900,"Еда/городской транспорт: требует проверки"],
-["20.11","День 3 · Tokyo",980,"Транспорт до Такао и питание: требуют проверки"],
-["21.11","День 4 · Tokyo",300,"Night viewing опционально: +¥1,000/¥1,200; еда/транспорт требуют проверки"],
-["22.11","День 5 · Tokyo → Kyoto",14350,"Еда/локальный транспорт требуют проверки"],
-["23.11","День 6 · Kyoto",1100,"Еда/транспорт требуют проверки"],
-["24.11","День 7 · Kyoto",500,"Опционально здания Tenryu-ji +¥300; прочее требует проверки"],
-["25.11","День 8 · Kyoto → Osaka",1780,"Локальный транспорт/еда требуют проверки"],
-["26.11","День 9 · Osaka / USJ",1200,"Studio Pass и питание требуют проверки"],
-["27.11","День 10 · Nara",2860,"Kasuga special worship включён; еда требует проверки"],
-["28.11","День 11 · Himeji",7080,"Combo + Spa World; питание требует проверки"],
-["29.11","День 12 · Minoh / Shinsekai",4660,"Включены rail + bus + Katsuo-ji + Tsutenkaku; еда требует проверки"],
-["30.11","День 13 · Osaka → Tokyo",14400,"Локальный транспорт/еда требуют проверки"],
-["01.12","День 14 · Tokyo → Haneda",0,"Наземный транспорт и еда требуют проверки"]
-];
-const base=[
-["Транспорт","Narita → Asakusa, Keisei Access Express","1290","18.11","Подтверждённый взрослый тариф; IC-вариант ¥1,276 не включён."],
-["Билеты","Shinjuku Gyoen","500","19.11","Взрослый вход."],
-["Билеты","SHIBUYA SKY","3400","19.11","Текущая цена web-билета после 15:00; продажа на дату открывается позже."],
-["Транспорт","Канатная дорога Mount Takao, туда-обратно","980","20.11","Взрослый round trip."],
-["Билеты","Koishikawa Korakuen, дневной вход","300","21.11","Взрослый вход."],
-["Транспорт","Tokyo → Kyoto, Hikari reserved","13850","22.11","Текущий стандартный тариф; конкретный поезд/тариф на дату требует проверки."],
-["Билеты","Kiyomizu-dera","500","22.11","Взрослый вход по опубликованным данным 2026; 21–30.11 действует вечерний режим."],
-["Билеты","Kinkaku-ji","500","23.11","Взрослый вход."],
-["Билеты","Ryoan-ji","600","23.11","Взрослый вход."],
-["Билеты","Tenryu-ji, сад","500","24.11","Вход в сад; здания отдельно не включены."],
-["Транспорт","Kyoto → Osaka, JR Special Rapid","580","25.11","Взрослый тариф в одну сторону."],
-["Билеты","Osaka Castle Museum","1200","25.11","Взрослый вход."],
-["Транспорт","Osaka-Namba ↔ Universal City","1200","26.11","Текущий ориентир ¥600 в одну сторону: Hanshin ¥400 + JR Yumesaki около ¥200."],
-["Транспорт","Osaka-Namba ↔ Kintetsu-Nara","1360","27.11","Обычный взрослый тариф ¥680 в одну сторону × 2."],
-["Билеты","Tōdai-ji","800","27.11","Взрослый вход."],
-["Билеты","Kasuga Taisha, special worship","700","27.11","Опциональный special worship; не общий вход в территорию."],
-["Транспорт","Osaka ↔ Himeji, JR Special Rapid","2980","28.11","¥1,490 в одну сторону × 2."],
-["Билеты","Himeji Castle + Koko-en, combo","2600","28.11","Комбинированный билет; вместо отдельных ¥2,500 + ¥400."],
-["Билеты","Spa World","1500","28.11","Обычный взрослый вход без бассейна; специальные условия могут меняться."],
-["Транспорт","Namba ↔ Minoh-Kayano","1060","29.11","¥530 в одну сторону × 2; текущий ориентир 34–40 мин, без пересадки."],
-["Билеты","Katsuo-ji","500","29.11","Взрослый вход."],
-["Транспорт","Minoh-Kayano ↔ Katsuo-ji, Hankyu Bus","1600","29.11","¥800 в одну сторону × 2; безналичная оплата."],
-["Билеты","Tsutenkaku","1500","29.11","Взрослый билет."],
-["Транспорт","Shin-Osaka → Tokyo, Hikari reserved","14400","30.11","Текущий стандартный тариф; конкретный поезд/тариф на дату требует проверки."]
-];
-const key='japan-budget-manual-v1';
-  const cashRates={JPY_RUB_SELL:0.56,USD_RUB_SELL:80.92,source:'Valuta24 · Москва',date:'28.09.2026',online:false};
-  let manual=[];
-  try{manual=JSON.parse(localStorage.getItem(key)||'[]')||[];}catch(e){manual=[];}
-  const money=n=>'¥'+Number(n||0).toLocaleString('ja-JP');
-  function esc(s){return String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
-  function render(){
-    baseList.innerHTML=base.map(x=>'<div class="budget-row"><div class="budget-row-main"><div class="budget-row-name">'+esc(x[1])+'</div><div class="budget-row-meta">'+esc(x[0])+' · '+esc(x[3])+' · '+esc(x[4])+'</div></div><div class="budget-row-amount">'+money(x[2])+'</div></div>').join('');
-    manualList.innerHTML=manual.length?manual.map((x,i)=>'<div class="budget-row manual"><div class="budget-row-main"><div class="budget-row-name">'+esc(x.name)+'</div><div class="budget-row-meta">'+esc(x.category)+' · '+esc(x.currency)+(x.comment?' · '+esc(x.comment):'')+'</div></div><div class="budget-row-amount">'+money(x.jpyAmount)+' <button class="budget-delete" type="button" data-delete="'+i+'" aria-label="Удалить трату">×</button></div></div>').join(''):'<div class="budget-note">Дополнительных трат пока нет.</div>';
-    const baseTotal=base.reduce((s,x)=>s+Number(x[2]||0),0), manualTotal=manual.reduce((s,x)=>s+Number(x.jpyAmount||0),0);
-    const totalJpy=baseTotal+manualTotal, totalRub=totalJpy*cashRates.JPY_RUB_SELL, totalUsd=totalRub/cashRates.USD_RUB_SELL;
-    const dailyEl=document.getElementById('budgetDailyList');
-    if(dailyEl) dailyEl.innerHTML=daily.map(x=>'<div class="budget-row"><div class="budget-row-main"><div class="budget-row-name">'+esc(x[1])+'</div><div class="budget-row-meta">'+esc(x[3])+'</div></div><div class="budget-row-amount">'+money(x[2])+'</div></div>').join('');
-    document.getElementById('budgetTotal').innerHTML=money(totalJpy)+'<span class="budget-total-sub">≈ ₽'+Math.round(totalRub).toLocaleString('ru-RU')+' / 
-    manualList.querySelectorAll('[data-delete]').forEach(b=>b.addEventListener('click',()=>{manual.splice(Number(b.dataset.delete),1);save();render();}));
-  }
-  function save(){try{localStorage.setItem(key,JSON.stringify(manual));}catch(e){}}
-  function setOpen(v){modal.classList.toggle('open',v);document.body.style.overflow=v?'hidden':'';if(v) close.focus();}
-  open.addEventListener('click',()=>{render();setOpen(true);});
-  close.addEventListener('click',()=>setOpen(false));
-  modal.addEventListener('click',e=>{if(e.target===modal)setOpen(false);});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('open'))setOpen(false);});
-  form.addEventListener('submit',e=>{
-    e.preventDefault();
-    const name=document.getElementById('budgetName').value.trim(), amount=Number(document.getElementById('budgetAmount').value), category=document.getElementById('budgetCategory').value, comment=document.getElementById('budgetComment').value.trim();
-    if(!name||!Number.isFinite(amount)||amount<=0) return;
-    manual.push({name,amount,category,comment});
-    save(); form.reset(); render();
-  });
-  document.getElementById('resetBudget').addEventListener('click',()=>{if(!manual.length)return;if(confirm('Удалить все добавленные вручную траты?')){manual=[];save();render();}});
-  render();
-})();
-</script>
+
+
+
 
 </body>
 </html>
