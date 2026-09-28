@@ -1680,7 +1680,7 @@ const key='japan-budget-manual-v1';
     const totalJpy=baseTotal+manualTotal, totalRub=totalJpy*cashRates.JPY_RUB_SELL, totalUsd=totalRub/cashRates.USD_RUB_SELL;
     const dailyEl=document.getElementById('budgetDailyList');
     if(dailyEl) dailyEl.innerHTML=daily.map(x=>'<div class="budget-row"><div class="budget-row-main"><div class="budget-row-name">'+esc(x[1])+'</div><div class="budget-row-meta">'+esc(x[3])+'</div></div><div class="budget-row-amount">'+money(x[2])+'</div></div>').join('');
-    document.getElementById('budgetTotal').innerHTML=money(totalJpy)+'<span class="budget-total-sub">≈ ₽'+Math.round(totalRub).toLocaleString('ru-RU')+' / 
+    document.getElementById('budgetTotal').innerHTML=money(totalJpy)+'<span class="budget-total-sub">≈ ₽'+Math.round(totalRub).toLocaleString('ru-RU')+' / $'+totalUsd.toFixed(2)+'</span>';
     manualList.querySelectorAll('[data-delete]').forEach(b=>b.addEventListener('click',()=>{manual.splice(Number(b.dataset.delete),1);save();render();}));
   }
   function save(){try{localStorage.setItem(key,JSON.stringify(manual));}catch(e){}}
