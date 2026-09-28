@@ -315,6 +315,11 @@ html[data-theme="light"]{--bg:#f8f5f1;--card:#fff;--text:#2c2c2c;--muted:#6b5b53
 .budget-edit{border:1px solid var(--border);background:var(--card);color:var(--accent);border-radius:8px;padding:4px 7px;font:inherit;font-size:.68rem;font-weight:800;cursor:pointer}
 .budget-edit:hover{background:var(--accent-light)}
 .budget-rates{margin:10px 0 14px;padding:11px 12px;border:1px solid var(--border);border-radius:13px;background:var(--card)}
+.budget-rates-toggle{width:100%;border:0;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:space-between;padding:1px 0;font:inherit;font-size:.85rem;font-weight:850;cursor:pointer;text-align:left}
+.budget-rates-chevron{font-size:1.05rem;transition:transform .2s ease}
+.budget-rates.open .budget-rates-chevron{transform:rotate(180deg)}
+.budget-rates-body{padding-top:10px}
+
 .budget-rates-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .budget-rates-title{font-size:.82rem;font-weight:850}
 .budget-refresh{border:0;border-radius:10px;background:var(--accent);color:#fff;padding:8px 11px;font:inherit;font-size:.72rem;font-weight:800;cursor:pointer}
@@ -429,8 +434,12 @@ html[data-theme="light"]{--bg:#f8f5f1;--card:#fff;--text:#2c2c2c;--muted:#6b5b53
       <button class="budget-close" type="button" id="closeBudget" aria-label="Закрыть бюджет">×</button>
     </div>
     <div class="budget-rates">
+      <button class="budget-rates-toggle" type="button" id="toggleBudgetRates" aria-expanded="false">
+        <span>Конвертер валют</span><span class="budget-rates-chevron">⌄</span>
+      </button>
+      <div class="budget-rates-body" id="budgetRatesBody" hidden>
       <div class="budget-rates-head">
-        <div class="budget-rates-title">Наличный курс</div>
+        <div class="budget-rates-title">Онлайн-курс</div>
         <button class="budget-refresh" type="button" id="refreshBudgetRates">↻ Обновить курс</button>
       </div>
       <div class="budget-rates-grid" id="budgetRatesGrid">
@@ -443,6 +452,7 @@ html[data-theme="light"]{--bg:#f8f5f1;--card:#fff;--text:#2c2c2c;--muted:#6b5b53
         <select id="budgetConvertFrom"><option value="JPY">JPY ¥</option><option value="RUB">RUB ₽</option><option value="USD">USD $</option></select>
         <select id="budgetConvertTo"><option value="RUB">RUB ₽</option><option value="JPY">JPY ¥</option><option value="USD">USD $</option></select>
         <div class="budget-converter-result" id="budgetConverterResult">Введите сумму для конвертации</div>
+      </div>
       </div>
     </div>
     <div class="budget-summary">
@@ -1626,31 +1636,31 @@ window.addEventListener('offline', loadWeather);
   try{manual=JSON.parse(localStorage.getItem(key)||'[]')||[];}catch(e){manual=[];}
   try{editedBase=JSON.parse(localStorage.getItem(baseKey)||'[]')||[];}catch(e){editedBase=[];}
   const savedBase=base.map((x,i)=>Number.isFinite(Number(editedBase[i]))?Number(editedBase[i]):Number(x[2]));
-  let rates={jpyBuy:0.543, jpySell:0.5995, usdBuy:85, usdSell:87, updatedAt:'28.09.2026 · проверенный снимок', source:'РБК «Рынок наличной валюты», Москва'};
+  let rates={jpyRub:null,jpyUsd:null,usdRub:null,updatedAt:'Не загружен',source:'Frankfurter API (центральные банки / официальные источники)'};
   try{const saved=JSON.parse(localStorage.getItem(rateKey)||'null');if(saved&&Number.isFinite(saved.jpyBuy)&&Number.isFinite(saved.jpySell)&&Number.isFinite(saved.usdBuy)&&Number.isFinite(saved.usdSell)) rates=saved;}catch(e){}
   const money=n=>'¥'+Number(n||0).toLocaleString('ja-JP');
   const rub=n=>'₽'+Number(n||0).toLocaleString('ru-RU',{maximumFractionDigits:0});
   const usd=n=>'$'+Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0});
   function esc(s){return String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
-  function getRubPerJpyForJpyToRub(){return rates.jpyBuy;}
-  function getRubPerJpyForRubToJpy(){return rates.jpySell;}
-  function getRubPerUsdForUsdToRub(){return rates.usdBuy;}
-  function getRubPerUsdForRubToUsd(){return rates.usdSell;}
+  function getRubPerJpyForJpyToRub(){return rates.jpyRub;}
+  function getRubPerJpyForRubToJpy(){return 1/rates.jpyRub;}
+  function getRubPerUsdForUsdToRub(){return rates.usdRub;}
+  function getRubPerUsdForRubToUsd(){return 1/rates.usdRub;}
   function convert(amount,from,to){
     amount=Number(amount);if(!Number.isFinite(amount)) return NaN;if(from===to)return amount;
-    let rubValue;
-    if(from==='RUB') rubValue=amount;
-    else if(from==='JPY') rubValue=amount*getRubPerJpyForJpyToRub();
-    else if(from==='USD') rubValue=amount*getRubPerUsdForUsdToRub();
-    if(to==='RUB') return rubValue;
-    if(to==='JPY') return rubValue/getRubPerJpyForRubToJpy();
-    if(to==='USD') return rubValue/getRubPerUsdForRubToUsd();
+    if(from==='JPY'&&to==='RUB')return amount*rates.jpyRub;
+    if(from==='JPY'&&to==='USD')return amount*rates.jpyUsd;
+    if(from==='RUB'&&to==='JPY')return amount/rates.jpyRub;
+    if(from==='RUB'&&to==='USD')return amount/rates.usdRub;
+    if(from==='USD'&&to==='RUB')return amount*rates.usdRub;
+    if(from==='USD'&&to==='JPY')return amount/rates.jpyUsd;
     return NaN;
   }
   function renderRates(){
-    document.getElementById('rateJpyRub').textContent='₽'+(rates.jpyBuy*100).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})+' / 100 JPY покупка';
-    document.getElementById('rateUsdRub').textContent='₽'+rates.usdBuy.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})+' / USD покупка';
-    document.getElementById('budgetRatesNote').textContent='Наличный курс банков Москвы · покупка: JPY ₽'+(rates.jpyBuy*100).toFixed(2)+' / 100 JPY, USD ₽'+rates.usdBuy.toFixed(2)+' · продажа: JPY ₽'+(rates.jpySell*100).toFixed(2)+' / 100 JPY, USD ₽'+rates.usdSell.toFixed(2)+' · обновлено: '+rates.updatedAt+' · источник: '+rates.source+'.';
+    const has=Number.isFinite(rates.jpyRub)&&Number.isFinite(rates.jpyUsd)&&Number.isFinite(rates.usdRub);
+    document.getElementById('rateJpyRub').textContent=has?'₽'+(rates.jpyRub*100).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})+' / 100 JPY':'—';
+    document.getElementById('rateUsdRub').textContent=has?'₽'+rates.usdRub.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})+' / USD':'—';
+    document.getElementById('budgetRatesNote').textContent='Источник: '+rates.source+' · '+rates.updatedAt+'. Это справочный рыночный курс, не наличная котировка конкретного обменника.';
     updateConverter();
   }
   function render(){
@@ -1676,14 +1686,22 @@ window.addEventListener('offline', loadWeather);
   async function refreshRates(){
     const btn=document.getElementById('refreshBudgetRates');btn.disabled=true;btn.textContent='Обновляем…';
     try{
-      // RBC publishes live cash-bank quotes as a web page; the site itself cannot reliably
-      // fetch that HTML cross-origin. The refresh action opens the current cash market source
-      // so the user can verify the live quote without treating a stale quote as current.
-      window.open('https://cash.rbc.ru/?city=1','_blank','noopener');
-      document.getElementById('budgetRatesNote').textContent='Открыт актуальный наличный рынок РБК. После проверки котировок нажмите «Обновить курс» снова; автоматическое чтение банковской страницы из GitHub Pages не подтверждено из-за cross-origin ограничений.';
+      const res=await fetch('https://api.frankfurter.dev/v2/rates?base=JPY&quotes=RUB,USD',{cache:'no-store'});
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const data=await res.json();
+      const rows=Array.isArray(data)?data:[];
+      const map=Object.fromEntries(rows.map(x=>[x.quote,Number(x.rate)]));
+      if(!Number.isFinite(map.RUB)||!Number.isFinite(map.USD)) throw new Error('Курс JPY/RUB или JPY/USD отсутствует');
+      rates={jpyRub:map.RUB,jpyUsd:map.USD,usdRub:map.RUB/map.USD,updatedAt:(data[0]&&data[0].date)||new Date().toLocaleString('ru-RU'),source:'Frankfurter API'};
+      renderRates();
+      try{localStorage.setItem(rateKey,JSON.stringify(rates));}catch(e){}
+    }catch(e){
+      document.getElementById('budgetRatesNote').textContent='Не удалось получить онлайн-курс: '+e.message+'. Проверьте соединение и нажмите «Обновить курс» ещё раз.';
     }finally{btn.disabled=false;btn.textContent='↻ Обновить курс';}
   }
   function setOpen(v){modal.classList.toggle('open',v);document.body.style.overflow=v?'hidden':'';if(v) close.focus();}
+  const ratesToggle=document.getElementById('toggleBudgetRates'),ratesBody=document.getElementById('budgetRatesBody');
+  ratesToggle.addEventListener('click',()=>{const openState=ratesToggle.getAttribute('aria-expanded')!=='true';ratesToggle.setAttribute('aria-expanded',String(openState));ratesBody.hidden=!openState;document.querySelector('.budget-rates').classList.toggle('open',openState);if(openState&&!Number.isFinite(rates.jpyRub))refreshRates();});
   open.addEventListener('click',()=>{render();renderRates();setOpen(true);});
   close.addEventListener('click',()=>setOpen(false));
   modal.addEventListener('click',e=>{if(e.target===modal)setOpen(false);});
