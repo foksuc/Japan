@@ -1,0 +1,18 @@
+{
+  "name": "Япония 2026 — маршрут",
+  "short_name": "Япония",
+  "description": "Токио → Киото → Осака · 18.11 – 01.12.2026",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8f5f1",
+  "theme_color": "#a63a3a",
+  "lang": "ru",
+  "categories": ["travel", "lifestyle"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
